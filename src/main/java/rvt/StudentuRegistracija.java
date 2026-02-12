@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 
 public class StudentuRegistracija {
 
-    private static final String FILE_NAME = "students.csv";
+    private static final String FILE_NAME = "data/students.csv";
     private static List<Student> students = new ArrayList<>();
     private static Scanner scanner = new Scanner(System.in);
 
