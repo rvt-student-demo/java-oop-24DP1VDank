@@ -24,7 +24,7 @@ public class Box implements Interface_Packable {
     smallBox.add(new Book("Author A", "Book A", 1));
     smallBox.add(new CD("Artist B", "CD B", 1970));
 
-   
+   //4 part of the task
     System.out.println("Big box before adding small box: " + BigBox);
     System.out.println("Small box: " + smallBox);
     // Add the small box to the big box
