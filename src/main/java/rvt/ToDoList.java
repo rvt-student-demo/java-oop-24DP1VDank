@@ -12,7 +12,6 @@ public class ToDoList {
     private final String FILE_NAME = "C:\\Users\\a240310vd\\Documents\\java-oop-24DP1VDank\\data\\todo.csv";
 
     public static void main(String[] args) {
-        ToDoList list = new ToDoList();
 
         ToDoList todoList = new ToDoList();
         Scanner scanner = new Scanner(System.in);
