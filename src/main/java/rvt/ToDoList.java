@@ -2,24 +2,17 @@ package rvt;
 
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class ToDoList {
 
-    ArrayList<String> tasks;
+    ArrayList<Task> tasks;
+    private final String FILE_NAME = "C:\\Users\\a240310vd\\Documents\\java-oop-24DP1VDank\\data\\todo.csv";
 
     public static void main(String[] args) {
         ToDoList list = new ToDoList();
-        list.add("read the course material");
-        list.add("watch the latest fool us");
-        list.add("take it easy");
-        list.print();
-        list.remove(2);
-        list.print();
-        list.add("buy raisins");
-        list.print();
-        list.remove(1);
-        list.remove(1);
-        list.print();
 
         ToDoList todoList = new ToDoList();
         Scanner scanner = new Scanner(System.in);
@@ -30,20 +23,80 @@ public class ToDoList {
 
     public ToDoList() {
         tasks = new ArrayList<>();
+        loadFromFile();
     }
 
-    public void add(String task) {
+    private void loadFromFile() {
+        File file = new File(FILE_NAME);
+
+        if (!file.exists()) {
+            return;
+        }
+
+        try (Scanner fileReader = new Scanner(file)) {
+            if (fileReader.hasNextLine()) {
+                fileReader.nextLine();
+            }
+
+            while (fileReader.hasNextLine()) {
+                String line = fileReader.nextLine();
+                String[] parts = line.split(",", 2);
+
+                int id = Integer.parseInt(parts[0]);
+                String text = parts[1];
+
+                tasks.add(new Task(id, text));
+            }
+        } catch (Exception e) {
+            System.out.println("Error reading file");
+        }
+    }
+
+    public void add(String taskText) {
+        int id = getLastId() + 1;
+        Task task = new Task(id, taskText);
         tasks.add(task);
+
+        boolean fileExists = new File(FILE_NAME).exists();
+
+        try (FileWriter writer = new FileWriter(FILE_NAME, true)) {
+            if (!fileExists) {
+                writer.write("id,task\n");
+            }
+            writer.write(id + "," + taskText + "\n");
+        } catch (IOException e) {
+            System.out.println("Error writing file");
+        }
     }
 
     public void print() {
         for (int i = 0; i < tasks.size(); i++) {
-            System.out.println((i + 1) + ": " + tasks.get(i));
+            System.out.println((i + 1) + ": " + tasks.get(i).getTask());
         }
     }
 
     public void remove(int number) {
         tasks.remove(number - 1);
+        updateFile();
+    }
+
+    public int getLastId() {
+        if (tasks.isEmpty()) {
+            return 0;
+        }
+        return tasks.get(tasks.size() - 1).getId();
+    }
+
+    private boolean updateFile() {
+        try (FileWriter writer = new FileWriter(FILE_NAME)) {
+            writer.write("id,task\n");
+            for (Task task : tasks) {
+                writer.write(task.getId() + "," + task.getTask() + "\n");
+            }
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 }
 
@@ -80,5 +133,23 @@ class UserInterface {
                 todoList.remove(number);
             }
         }
+    }
+}
+
+class Task {
+    int id;
+    String task;
+
+    public Task(int id, String task) {
+        this.id = id;
+        this.task = task;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getTask() {
+        return task;
     }
 }
