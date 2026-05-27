@@ -1,15 +1,11 @@
 package rvt;
 
-import java.util.ArrayList;
+import java.sql.*;
 import java.util.Scanner;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
 
 public class ToDoList {
 
-    ArrayList<Task> tasks;
-    private final String FILE_NAME = "C:\\Users\\a240310vd\\Documents\\java-oop-24DP1VDank\\data\\todo.csv";
+    private static final String DB_URL = "jdbc:sqlite:todo.db";
 
     public static void main(String[] args) {
 
@@ -21,80 +17,79 @@ public class ToDoList {
     }
 
     public ToDoList() {
-        tasks = new ArrayList<>();
-        loadFromFile();
+        initDatabase();
     }
 
-    private void loadFromFile() {
-        File file = new File(FILE_NAME);
+    private Connection connect() throws SQLException {
+        return DriverManager.getConnection(DB_URL);
+    }
 
-        if (!file.exists()) {
-            return;
-        }
+    private void initDatabase() {
 
-        try (Scanner fileReader = new Scanner(file)) {
-            if (fileReader.hasNextLine()) {
-                fileReader.nextLine();
-            }
+        String sql = "CREATE TABLE IF NOT EXISTS todo ("
+                + "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "task TEXT NOT NULL)";
 
-            while (fileReader.hasNextLine()) {
-                String line = fileReader.nextLine();
-                String[] parts = line.split(",", 2);
+        try (
+                Connection conn = connect();
+                Statement stmt = conn.createStatement()) {
 
-                int id = Integer.parseInt(parts[0]);
-                String text = parts[1];
+            stmt.execute(sql);
 
-                tasks.add(new Task(id, text));
-            }
-        } catch (Exception e) {
-            System.out.println("Error reading file");
+        } catch (SQLException e) {
+            System.out.println("Database error");
         }
     }
 
     public void add(String taskText) {
-        int id = getLastId() + 1;
-        Task task = new Task(id, taskText);
-        tasks.add(task);
 
-        boolean fileExists = new File(FILE_NAME).exists();
+        String sql = "INSERT INTO todo(task) VALUES(?)";
 
-        try (FileWriter writer = new FileWriter(FILE_NAME, true)) {
-            if (!fileExists) {
-                writer.write("id,task\n");
-            }
-            writer.write(id + "," + taskText + "\n");
-        } catch (IOException e) {
-            System.out.println("Error writing file");
+        try (
+                Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, taskText);
+            pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            System.out.println("Add error");
         }
     }
 
     public void print() {
-        for (int i = 0; i < tasks.size(); i++) {
-            System.out.println((i + 1) + ": " + tasks.get(i).getTask());
-        }
-    }
 
-    public void remove(int number) {
-        tasks.remove(number - 1);
-        updateFile();
-    }
+        String sql = "SELECT * FROM todo";
 
-    public int getLastId() {
-        if (tasks.isEmpty()) {
-            return 0;
-        }
-        return tasks.get(tasks.size() - 1).getId();
-    }
+        try (
+                Connection conn = connect();
+                Statement stmt = conn.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
 
-    private boolean updateFile() {
-        try (FileWriter writer = new FileWriter(FILE_NAME)) {
-            writer.write("id,task\n");
-            for (Task task : tasks) {
-                writer.write(task.getId() + "," + task.getTask() + "\n");
+            while (rs.next()) {
+                System.out.println(
+                        rs.getInt("id") + ": " +
+                                rs.getString("task"));
             }
-            return true;
-        } catch (IOException e) {
-            return false;
+
+        } catch (SQLException e) {
+            System.out.println("Read error");
+        }
+    }
+
+    public void remove(int id) {
+
+        String sql = "DELETE FROM todo WHERE id = ?";
+
+        try (
+                Connection conn = connect();
+                PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, id);
+            pstmt.executeUpdate();
+
+        } catch (SQLException e) {
+            System.out.println("Delete error");
         }
     }
 }
@@ -110,7 +105,9 @@ class UserInterface {
     }
 
     public void start() {
+
         while (true) {
+
             System.out.print("Command: ");
             String command = scanner.nextLine();
 
@@ -119,36 +116,23 @@ class UserInterface {
             }
 
             if (command.equals("add")) {
+
                 System.out.print("To add: ");
                 String task = scanner.nextLine();
+
                 todoList.add(task);
 
             } else if (command.equals("list")) {
+
                 todoList.print();
 
             } else if (command.equals("remove")) {
-                System.out.print("Which one is removed? ");
-                int number = Integer.valueOf(scanner.nextLine());
-                todoList.remove(number);
+
+                System.out.print("Id to remove: ");
+                int id = Integer.valueOf(scanner.nextLine());
+
+                todoList.remove(id);
             }
         }
-    }
-}
-
-class Task {
-    int id;
-    String task;
-
-    public Task(int id, String task) {
-        this.id = id;
-        this.task = task;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    public String getTask() {
-        return task;
     }
 }
